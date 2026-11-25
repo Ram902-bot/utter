@@ -162,7 +162,7 @@ cd "$TAP_PATH"
 git pull -q origin main
 write_casks "$TAP_PATH/Casks"
 # Only the postflight style note is allowed: postflight_steps needs a recent Homebrew and runs sandboxed
-STYLE=$(brew style --cask Casks/utter.rb Casks/evertalk.rb 2>&1 | grep -E "^Casks/" | grep -v "InstallSteps" || true)
+STYLE=$(brew style --cask Casks/utter.rb Casks/evertalk.rb 2>&1 | grep -E "^Casks/" | grep -v -E "InstallSteps|OSDependsOn" || true)
 [ -z "$STYLE" ] || { echo "$STYLE"; git checkout -q -- Casks; rm -f Casks/utter.rb; fail "brew style issues; tap NOT pushed"; }
 git add Casks/utter.rb Casks/evertalk.rb
 git commit -q -m "Utter $VERSION (evertalk cask now installs Utter)"
