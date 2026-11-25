@@ -1,13 +1,13 @@
 #!/bin/bash
-# Release Evertalk to GitHub and update Homebrew tap
+# Release Utter to GitHub and update Homebrew tap
 # Usage: ./release.sh 1.1.0
 
 set -e
 
 # Config
-REPO="Ram902-bot/evertalk"
+REPO="Ram902-bot/utter"
 TAP_REPO="Ram902-bot/homebrew-tap"
-APP_PATH="build/Release/Build/Products/Release/Evertalk.app"
+APP_PATH="build/Release/Build/Products/Release/Utter.app"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Colors
@@ -26,7 +26,7 @@ fi
 VERSION="$1"
 TAG="v$VERSION"
 
-echo -e "${BLUE}Releasing Evertalk $TAG${NC}"
+echo -e "${BLUE}Releasing Utter $TAG${NC}"
 echo ""
 
 # Check if app exists
@@ -44,11 +44,11 @@ fi
 
 # Create zip
 echo -e "${BLUE}1. Creating zip...${NC}"
-ZIP_PATH="$SCRIPT_DIR/Evertalk-$VERSION.zip"
+ZIP_PATH="$SCRIPT_DIR/Utter-$VERSION.zip"
 cd "$SCRIPT_DIR/$(dirname "$APP_PATH")"
-zip -r "$ZIP_PATH" Evertalk.app
+zip -r "$ZIP_PATH" Utter.app
 cd "$SCRIPT_DIR"
-echo -e "${GREEN}   Created: Evertalk-$VERSION.zip${NC}"
+echo -e "${GREEN}   Created: Utter-$VERSION.zip${NC}"
 
 # Get SHA256
 SHA256=$(shasum -a 256 "$ZIP_PATH" | cut -d' ' -f1)
@@ -64,7 +64,7 @@ echo -e "${GREEN}   Pushed tag $TAG${NC}"
 echo -e "${BLUE}3. Creating GitHub release...${NC}"
 gh release create "$TAG" "$ZIP_PATH" \
     --repo "$REPO" \
-    --title "Evertalk $TAG" \
+    --title "Utter $TAG" \
     --notes "Release $VERSION"
 echo -e "${GREEN}   Release created: https://github.com/$REPO/releases/tag/$TAG${NC}"
 
@@ -81,12 +81,12 @@ cd "$TAP_PATH"
 git pull origin main
 
 # Update cask file
-CASK_FILE="$TAP_PATH/Casks/evertalk.rb"
+CASK_FILE="$TAP_PATH/Casks/utter.rb"
 sed -i '' "s/version \".*\"/version \"$VERSION\"/" "$CASK_FILE"
 sed -i '' "s/sha256 \".*\"/sha256 \"$SHA256\"/" "$CASK_FILE"
 
-git add Casks/evertalk.rb
-git commit -m "Update evertalk to $VERSION"
+git add Casks/utter.rb
+git commit -m "Update utter to $VERSION"
 git push origin main
 echo -e "${GREEN}   Homebrew tap updated${NC}"
 
@@ -94,10 +94,10 @@ echo -e "${GREEN}   Homebrew tap updated${NC}"
 rm "$ZIP_PATH"
 
 echo ""
-echo -e "${GREEN}Done! Evertalk $TAG released.${NC}"
+echo -e "${GREEN}Done! Utter $TAG released.${NC}"
 echo ""
 echo "Users can now run:"
-echo "  brew upgrade --cask evertalk"
+echo "  brew upgrade --cask utter"
 echo ""
 echo "Or new installs:"
-echo "  brew install --cask Ram902-bot/tap/evertalk"
+echo "  brew install --cask Ram902-bot/tap/utter"

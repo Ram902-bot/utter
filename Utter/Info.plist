@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>Utter</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.ram902.utter</string>
+	<key>CFBundleName</key>
+	<string>Utter</string>
+	<key>CFBundleShortVersionString</key>
+	<string>3.0.0</string>
+	<key>CFBundleVersion</key>
+	<string>5</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSUIElement</key>
+	<false/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Utter needs automation access to paste text into other applications.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Utter needs microphone access to transcribe your voice to text.</string>
+	<key>UtterUsageEndpoint</key>
+	<string>https://script.google.com/macros/s/AKfycbwo2gyQD4jOHSG2yR9-ePPLOIjpTl3Keh_bxeMwijzHYvOzsirBL5170UZhoJa0Lie_4A/exec</string>
+</dict>
+</plist>

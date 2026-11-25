@@ -1,30 +1,29 @@
 #!/bin/bash
-# Deploy Evertalk to /Applications
-# Note: Don't re-sign after initial setup to preserve Accessibility permission
+# Install the latest Debug build of Utter for local testing.
+# Replaces the app's contents in place so it works without admin rights on /Applications.
 
 set -e
 
-APP_NAME="Evertalk"
-BUILD_PATH="$HOME/Library/Developer/Xcode/DerivedData/Evertalk-*/Build/Products/Debug/Evertalk.app"
-DEST="/Applications/Evertalk.app"
-
-# Find the build
-BUILD=$(ls -d $BUILD_PATH 2>/dev/null | head -1)
-
+BUILD=$(ls -d "$HOME"/Library/Developer/Xcode/DerivedData/Utter-*/Build/Products/Debug/Utter.app 2>/dev/null | head -1)
 if [ -z "$BUILD" ]; then
-    echo "Error: Build not found. Run 'xcodebuild -scheme Evertalk build' first."
+    echo "Error: Build not found. Run 'xcodebuild -scheme Utter build' first."
     exit 1
 fi
 
-# Kill running app
-pkill -f "Evertalk.app" 2>/dev/null || true
+if [ -w /Applications ] || [ -d /Applications/Utter.app ]; then
+    DEST="/Applications/Utter.app"
+else
+    mkdir -p "$HOME/Applications"
+    DEST="$HOME/Applications/Utter.app"
+fi
+
+pkill -x Utter 2>/dev/null || true
 sleep 0.5
 
-# Copy to Applications (preserves existing signature if unchanged)
-rm -rf "$DEST"
-cp -R "$BUILD" "$DEST"
+mkdir -p "$DEST"
+rm -rf "$DEST/Contents"
+cp -R "$BUILD/Contents" "$DEST/"
 
-echo "Deployed to $DEST"
-echo "Note: If this is first install, grant Accessibility permission when prompted."
-
+echo "Installed to $DEST"
+echo "Note: debug builds are ad-hoc signed, so macOS asks for Accessibility again after each install."
 open "$DEST"
