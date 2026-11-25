@@ -80,9 +80,24 @@ final class ModelDownloader {
 
         for file in files where !isComplete(file) {
             let base = completedBytes
-            try await withRetries(onRetry: onRetry) {
-                try await self.downloadFile(file) { written in
-                    progress(min(Double(base + written) / Double(totalBytes), 1.0))
+            // Resumes after every drop (corporate proxies cut long downloads at random points).
+            // Keeps retrying while attempts make progress; gives up after maxAttempts in a row with none.
+            var stalledAttempts = 0
+            var attempt = 0
+            while true {
+                attempt += 1
+                let before = partialSize(of: file)
+                do {
+                    try await self.downloadFile(file) { bytesSoFar in
+                        progress(min(Double(base + bytesSoFar) / Double(totalBytes), 1.0))
+                    }
+                    break
+                } catch {
+                    stalledAttempts = partialSize(of: file) > before ? 0 : stalledAttempts + 1
+                    print("Model download attempt \(attempt) for \(file.path) stopped: \(error.localizedDescription)")
+                    if stalledAttempts >= maxAttempts { throw error }
+                    onRetry(attempt + 1, maxAttempts)
+                    try? await Task.sleep(nanoseconds: UInt64(min(stalledAttempts + 1, 5)) * 2_000_000_000)
                 }
             }
             completedBytes += file.size ?? 0
@@ -127,51 +142,36 @@ final class ModelDownloader {
         return size > 0
     }
 
+    /// Partial download kept next to the destination, so retries (and app restarts) resume it
+    private func partURL(_ file: RemoteFile) -> URL {
+        file.destination.appendingPathExtension("part")
+    }
+
+    private func partialSize(of file: RemoteFile) -> Int64 {
+        (try? FileManager.default.attributesOfItem(atPath: partURL(file).path))?[.size] as? Int64 ?? 0
+    }
+
+    /// Downloads one file, resuming from any partial data with an HTTP Range request.
+    /// onBytes reports the bytes of this file on disk so far (including resumed data).
     private func downloadFile(_ file: RemoteFile, onBytes: @escaping (Int64) -> Void) async throws {
+        let fm = FileManager.default
+        try fm.createDirectory(at: file.destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let part = partURL(file)
+        if !fm.fileExists(atPath: part.path) { fm.createFile(atPath: part.path, contents: nil) }
+
         let url = URL(string: "\(endpoint)/\(file.repo)/resolve/main/\(file.path)")!
-        var observation: NSKeyValueObservation?
-        defer { observation?.invalidate() }
+        let task = RangeDownload(url: url, part: part, expected: file.size, onBytes: onBytes)
+        try await task.run(configuration: session.configuration)
 
-        let staged: URL = try await withCheckedThrowingContinuation { continuation in
-            let task = session.downloadTask(with: url) { location, response, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                do {
-                    try self.checkStatus(response, for: file.path)
-                    guard let location else {
-                        throw TranscriptionError.modelDownloadFailed("No data for \(file.path)")
-                    }
-                    // The system deletes `location` when this handler returns, so move it now
-                    let staged = FileManager.default.temporaryDirectory
-                        .appendingPathComponent("utter-\(UUID().uuidString)")
-                    try FileManager.default.moveItem(at: location, to: staged)
-                    continuation.resume(returning: staged)
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-            observation = task.progress.observe(\.completedUnitCount) { progress, _ in
-                onBytes(progress.completedUnitCount)
-            }
-            task.resume()
-        }
-
-        let fileManager = FileManager.default
-        defer { try? fileManager.removeItem(at: staged) }
-
-        if let expected = file.size,
-           let size = (try? fileManager.attributesOfItem(atPath: staged.path))?[.size] as? Int64,
-           size != expected {
+        let size = (try? fm.attributesOfItem(atPath: part.path))?[.size] as? Int64 ?? 0
+        if let expected = file.size, size != expected {
+            if size > expected { try? fm.removeItem(at: part) }
             throw TranscriptionError.modelDownloadFailed("\(file.path) is \(size) bytes, expected \(expected)")
         }
-
-        try fileManager.createDirectory(at: file.destination.deletingLastPathComponent(), withIntermediateDirectories: true)
-        if fileManager.fileExists(atPath: file.destination.path) {
-            try fileManager.removeItem(at: file.destination)
+        if fm.fileExists(atPath: file.destination.path) {
+            try fm.removeItem(at: file.destination)
         }
-        try fileManager.moveItem(at: staged, to: file.destination)
+        try fm.moveItem(at: part, to: file.destination)
     }
 
     private func checkStatus(_ response: URLResponse?, for name: String) throws {
@@ -179,6 +179,92 @@ final class ModelDownloader {
         guard (200..<300).contains(http.statusCode) else {
             throw TranscriptionError.modelDownloadFailed("HTTP \(http.statusCode) for \(name)")
         }
+    }
+}
+
+/// One HTTP download that appends to a partial file, asking the server only for the missing bytes
+private final class RangeDownload: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+    private let url: URL
+    private let part: URL
+    private let expected: Int64?
+    private let onBytes: (Int64) -> Void
+    private var handle: FileHandle?
+    private var onDisk: Int64 = 0
+    private var continuation: CheckedContinuation<Void, Error>?
+    private var failure: Error?
+
+    init(url: URL, part: URL, expected: Int64?, onBytes: @escaping (Int64) -> Void) {
+        self.url = url
+        self.part = part
+        self.expected = expected
+        self.onBytes = onBytes
+    }
+
+    func run(configuration: URLSessionConfiguration) async throws {
+        onDisk = (try? FileManager.default.attributesOfItem(atPath: part.path))?[.size] as? Int64 ?? 0
+        if let expected, onDisk == expected { return }
+        if let expected, onDisk > expected {
+            try? FileManager.default.removeItem(at: part)
+            FileManager.default.createFile(atPath: part.path, contents: nil)
+            onDisk = 0
+        }
+        var request = URLRequest(url: url)
+        if onDisk > 0 { request.setValue("bytes=\(onDisk)-", forHTTPHeaderField: "Range") }
+
+        let queue = OperationQueue()
+        queue.maxConcurrentOperationCount = 1
+        let session = URLSession(configuration: configuration, delegate: self, delegateQueue: queue)
+        defer { session.finishTasksAndInvalidate() }
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            self.continuation = continuation
+            session.dataTask(with: request).resume()
+        }
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse,
+                    completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        do {
+            switch status {
+            case 206:
+                break // server sent only the missing bytes: append
+            case 200:
+                // Server ignored the range and sent the whole file: start the partial file over
+                try Data().write(to: part)
+                onDisk = 0
+            default:
+                throw TranscriptionError.modelDownloadFailed("HTTP \(status) for \(url.lastPathComponent)")
+            }
+            let handle = try FileHandle(forWritingTo: part)
+            try handle.seekToEnd()
+            self.handle = handle
+            completionHandler(.allow)
+        } catch {
+            failure = error
+            completionHandler(.cancel)
+        }
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        do {
+            try handle?.write(contentsOf: data)
+            onDisk += Int64(data.count)
+            onBytes(onDisk)
+        } catch {
+            failure = error
+            dataTask.cancel()
+        }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        try? handle?.close()
+        handle = nil
+        if let error = failure ?? error {
+            continuation?.resume(throwing: error)
+        } else {
+            continuation?.resume()
+        }
+        continuation = nil
     }
 }
 

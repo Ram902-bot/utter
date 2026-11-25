@@ -1,3 +1,5 @@
+**3.0.2**: the speech model download now resumes after network drops instead of starting over. Behind company proxies the download could fail every time with "Setup failed"; it now finishes.
+
 **3.0.1**: fixes how future updates work for people who came from Evertalk, so an update can never leave you without the app. If you're on Evertalk, you go straight to 3.0.1.
 
 Evertalk is now **Utter**: a full Mac app instead of a menu bar app.
