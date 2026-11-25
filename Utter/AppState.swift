@@ -62,7 +62,7 @@ class AppState: ObservableObject {
     @Published private(set) var accessibilityGranted = DocsMode.isOn || AXIsProcessTrusted()
     private var permissionTimer: Timer?
 
-    /// The old EverTalk app still running holds Cmd+Shift+Space, so Utter's shortcut can't work
+    /// The old Evertalk app still running holds Cmd+Shift+Space, so Utter's shortcut can't work
     @Published private(set) var legacyAppRunning = !DocsMode.isOn && AppState.isLegacyAppRunning()
 
     var setupHealthy: Bool {
@@ -73,7 +73,7 @@ class AppState: ObservableObject {
         !NSRunningApplication.runningApplications(withBundleIdentifier: AppPaths.legacyBundleID).isEmpty
     }
 
-    /// Quits the old EverTalk app so Utter can use the shortcut
+    /// Quits the old Evertalk app so Utter can use the shortcut
     func quitLegacyApp() {
         NSRunningApplication.runningApplications(withBundleIdentifier: AppPaths.legacyBundleID).forEach { $0.terminate() }
     }

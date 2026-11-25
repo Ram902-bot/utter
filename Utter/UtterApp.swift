@@ -81,7 +81,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
-    /// The login item belongs to the app ID, so EverTalk's setting doesn't carry over by itself:
+    /// The login item belongs to the app ID, so Evertalk's setting doesn't carry over by itself:
     /// register Utter if the user had it on, and make the toggle match what macOS actually has.
     private func syncLaunchAtLogin() {
         let service = SMAppService.mainApp

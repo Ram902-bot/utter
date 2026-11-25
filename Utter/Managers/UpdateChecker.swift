@@ -16,7 +16,7 @@ class UpdateChecker: ObservableObject {
 
     @Published var state: UpdateState = .idle
 
-    /// New cask first; the old "evertalk" cask covers the move from EverTalk
+    /// New cask first; the old "evertalk" cask covers the move from Evertalk
     private static let caskURLs = [
         URL(string: "https://raw.githubusercontent.com/Ram902-bot/homebrew-tap/main/Casks/utter.rb")!,
         URL(string: "https://raw.githubusercontent.com/Ram902-bot/homebrew-tap/main/Casks/evertalk.rb")!
@@ -103,7 +103,7 @@ class UpdateChecker: ObservableObject {
                 if installed.contains("utter") {
                     upgrade = Self.run(brew, ["upgrade", "--cask", "utter"])
                 } else if installed.contains("evertalk") {
-                    // Move from the old EverTalk cask to Utter (model and history are kept)
+                    // Move from the old Evertalk cask to Utter (model and history are kept)
                     let removed = Self.run(brew, ["uninstall", "--cask", "evertalk"])
                     upgrade = removed.status == 0 ? Self.run(brew, ["install", "--cask", Self.tapCask]) : removed
                 } else {

@@ -34,10 +34,10 @@ struct HistoryView: View {
             if appState.legacyAppRunning {
                 HStack(spacing: 10) {
                     Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.orange)
-                    Text("The old EverTalk app is still running and is using Cmd+Shift+Space.")
+                    Text("The old Evertalk app is still running and is using Cmd+Shift+Space.")
                         .font(.system(size: 12))
                     Spacer(minLength: 8)
-                    Button("Quit EverTalk") { appState.quitLegacyApp() }
+                    Button("Quit Evertalk") { appState.quitLegacyApp() }
                 }
                 .padding(12)
                 .background(Color.orange.opacity(0.12))

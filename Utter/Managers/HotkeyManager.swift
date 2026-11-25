@@ -9,7 +9,7 @@ class HotkeyManager: ObservableObject {
     // Callback to trigger when hotkey is pressed
     var onHotkeyPressed: (() -> Void)?
 
-    /// False while another app (e.g. the old EverTalk) holds Cmd+Shift+Space; retried until free
+    /// False while another app (e.g. the old Evertalk) holds Cmd+Shift+Space; retried until free
     private(set) var isRegistered = false
     private var retryTimer: Timer?
 

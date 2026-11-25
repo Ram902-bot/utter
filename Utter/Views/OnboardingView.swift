@@ -30,11 +30,11 @@ struct OnboardingView: View {
                     if appState.legacyAppRunning {
                         HStack(spacing: 10) {
                             Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.orange)
-                            Text("The old EverTalk app is still running and is using Cmd+Shift+Space. Quit it so Utter's shortcut works.")
+                            Text("The old Evertalk app is still running and is using Cmd+Shift+Space. Quit it so Utter's shortcut works.")
                                 .font(.system(size: 12))
                                 .fixedSize(horizontal: false, vertical: true)
                             Spacer(minLength: 8)
-                            Button("Quit EverTalk") { appState.quitLegacyApp() }
+                            Button("Quit Evertalk") { appState.quitLegacyApp() }
                         }
                         .padding(12)
                         .background(RoundedRectangle(cornerRadius: 10).fill(Color.orange.opacity(0.12)))

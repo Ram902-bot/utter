@@ -6,7 +6,7 @@ Speech is turned into text on your Mac with OpenAI's Whisper model. No subscript
 
 ![Utter's History page](docs/screenshots/history.png)
 
-> **Utter was called Evertalk** until version 3.0. Updating from Evertalk keeps your speech model and settings. See [Coming from Evertalk](#coming-from-evertalk).
+> **Utter was called Evertalk** until version 3.0. Already have Evertalk? See [Coming from Evertalk](#coming-from-evertalk): you click Update once and your speech model comes with you.
 
 ## Install
 
@@ -97,17 +97,47 @@ After an update, macOS may switch off Utter's Accessibility access. The Setup pa
 
 ## Coming from Evertalk
 
-- If you're on Evertalk 2.2.2 or later, click **Update to 3.0.0** in the menu bar. Otherwise run `brew upgrade --cask evertalk`.
-- Your speech model and settings move over by themselves, so there's no second download.
-- macOS treats Utter as a new app, so allow the microphone and Accessibility once more. The setup checklist walks you through it.
-- If Evertalk is still running, Utter shows **Quit EverTalk**, because only one app can use Cmd+Shift+Space.
+Evertalk is now Utter. Updating keeps your speech model and settings, so there's no second download.
+
+### What's called what
+
+| | Name |
+|---|---|
+| The app you have today | **Evertalk** (menu bar mic icon) |
+| The Homebrew package you update | **`evertalk`**, kept so your existing update button finds it |
+| The app after updating | **Utter**, in `/Applications/Utter.app`. Evertalk is removed |
+| New installs | `brew install --cask Ram902-bot/tap/utter` |
+
+### How to update
+
+Nothing updates by itself. You click Update or run one command.
+
+1. **Everstage laptop?** Open **Everstage Self Service**, search **Make Me Admin** and run it. Without admin rights the update fails with "Update failed - retry".
+2. **Update**, depending on your version (Evertalk menu bar > Settings shows it):
+   - **Evertalk 2.2.2 or 2.2.3:** click the mic icon in the menu bar, then **Update to 3.0.0...**. This can take up to 6 hours to appear after release; reopening Evertalk checks again.
+   - **Evertalk 2.2.0 or 2.2.1:** there's no update button. Run this in Terminal:
+
+     ```bash
+     brew upgrade --cask evertalk
+     ```
+
+3. **Utter opens by itself.** Evertalk is gone and Utter is in Applications.
+4. **Allow the microphone and Accessibility again.** macOS treats Utter as a new app, so the setup checklist asks for both once. On an Everstage laptop, run Make Me Admin again if Accessibility won't switch on.
+
+After this, Utter keeps itself up to date. It shows a notification and a banner when a new version is out, and moves you to the `utter` package on its next update.
+
+### If something's off after updating
+
+- **The shortcut does nothing:** Evertalk is probably still running. Utter shows **Quit Evertalk**; click it.
+- **Text doesn't appear, but Cmd+V pastes it:** Accessibility isn't on for Utter yet. Open **Setup** in the sidebar and follow step 2.
+- **"Update failed - retry" in Evertalk:** run Make Me Admin, then click it again.
 
 ## Troubleshooting
 
 | Problem | Fix |
 |---|---|
 | Text doesn't appear, but Cmd+V pastes it | Accessibility is off. Open **Setup** in the sidebar and follow step 2. On a company Mac, run Make Me Admin first. If Utter is already switched on, switch it off and on again. |
-| The shortcut does nothing | Check **Setup**. If the old Evertalk app is running, click **Quit EverTalk**. If another app uses Cmd+Shift+Space, change that app's shortcut. |
+| The shortcut does nothing | Check **Setup**. If the old Evertalk app is running, click **Quit Evertalk**. If another app uses Cmd+Shift+Space, change that app's shortcut. |
 | A word keeps coming out wrong | Click **Fix** on that entry in History. Utter fixes it from then on. |
 | "Didn't catch that" | Speak for at least a second before stopping, close to the mic. Utter understands English only. |
 | Update didn't finish | On a company Mac, run Make Me Admin, then click **Try Again**. |
