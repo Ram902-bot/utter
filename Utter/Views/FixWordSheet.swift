@@ -7,8 +7,8 @@ struct FixWordSheet: View {
     @Environment(\.dismiss) private var dismiss
     let entry: DictationEntry
 
-    @State private var wrote = ""
-    @State private var said = ""
+    @State private var wrote = DocsMode.fixPrefill.wrote
+    @State private var said = DocsMode.fixPrefill.said
     @State private var alwaysFix = true
     @State private var addToWords = true
 
@@ -31,10 +31,12 @@ struct FixWordSheet: View {
                 Text("Tell Utter what it got wrong. It fixes this entry and remembers for next time.")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Text(entry.text)
                 .font(.system(size: 13))
+                .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)

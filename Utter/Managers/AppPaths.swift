@@ -7,6 +7,9 @@ enum AppPaths {
     static let legacyBundleID = "com.ram902.evertalk"
 
     static let supportDirectory: URL = {
+        if DocsMode.isOn, let dir = ProcessInfo.processInfo.environment["UTTER_SUPPORT_DIR"] {
+            return URL(fileURLWithPath: dir, isDirectory: true)
+        }
         let fm = FileManager.default
         let base = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let current = base.appendingPathComponent("Utter", isDirectory: true)
@@ -33,6 +36,19 @@ enum AppPaths {
         }
         defaults.set(true, forKey: "migratedFromEvertalk")
     }
+}
+
+/// Debug-only mode that renders the app's screens to PNGs for the README and guide.
+/// Uses a throwaway data folder, skips the model, updates and usage counts. Always off in release builds.
+enum DocsMode {
+    #if DEBUG
+    static let isOn = ProcessInfo.processInfo.environment["UTTER_DOCS_RENDER"] == "1"
+    #else
+    static let isOn = false
+    #endif
+    /// Pre-filled values for screenshots (debug render only)
+    nonisolated(unsafe) static var searchQuery = ""
+    nonisolated(unsafe) static var fixPrefill: (wrote: String, said: String) = ("", "")
 }
 
 /// Company Macs managed with Jamf need temporary admin ("Make Me Admin" in Self Service+)

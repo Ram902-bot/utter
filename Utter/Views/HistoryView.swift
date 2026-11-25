@@ -3,7 +3,7 @@ import ApplicationServices
 
 struct HistoryView: View {
     @EnvironmentObject var appState: AppState
-    @State private var query = ""
+    @State private var query = DocsMode.searchQuery
     @State private var copiedID: UUID?
     @State private var confirmClear = false
     @State private var fixing: DictationEntry?
@@ -186,7 +186,9 @@ struct HistoryView: View {
             Text(entry.date, format: .dateTime.hour().minute())
                 .font(.system(size: 11).monospacedDigit())
                 .foregroundColor(.secondary)
-                .frame(width: 44, alignment: .trailing)
+                .lineLimit(1)
+                .fixedSize()
+                .frame(width: 62, alignment: .trailing)
                 .padding(.top, 11)
 
             VStack(alignment: .leading, spacing: 8) {

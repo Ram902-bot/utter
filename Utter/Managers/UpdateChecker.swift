@@ -48,6 +48,7 @@ class UpdateChecker: ObservableObject {
     }
 
     init() {
+        if DocsMode.isOn { return }
         Task { await checkForUpdates() }
         timer = Timer.scheduledTimer(withTimeInterval: Self.checkInterval, repeats: true) { [weak self] _ in
             Task { @MainActor in

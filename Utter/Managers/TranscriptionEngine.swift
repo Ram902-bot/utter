@@ -241,6 +241,10 @@ class TranscriptionEngine: ObservableObject {
     private static let requiredModelParts = ["AudioEncoder", "MelSpectrogram", "TextDecoder"]
 
     init() {
+        if DocsMode.isOn {
+            isModelReady = true
+            return
+        }
         Task {
             await loadModel()
         }

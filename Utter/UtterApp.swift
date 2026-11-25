@@ -35,6 +35,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        #if DEBUG
+        if DocsMode.isOn {
+            DocsRenderer.run(appState: appState, appDelegate: self)
+            return
+        }
+        #endif
         AppPaths.migrateLegacyDefaults()
         syncLaunchAtLogin()
         appState.usage.appLaunched()

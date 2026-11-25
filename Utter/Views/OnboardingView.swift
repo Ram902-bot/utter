@@ -8,8 +8,8 @@ struct OnboardingView: View {
     @EnvironmentObject var appState: AppState
     /// true = shown as the Setup page in the sidebar (no Skip / Get Started, adds Updates)
     var embedded = false
-    @State private var micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
-    @State private var accessibilityOK = AXIsProcessTrusted()
+    @State private var micStatus = DocsMode.isOn ? .authorized : AVCaptureDevice.authorizationStatus(for: .audio)
+    @State private var accessibilityOK = DocsMode.isOn || AXIsProcessTrusted()
     @State private var startCount = 0
 
     private let poll = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -265,6 +265,7 @@ struct OnboardingView: View {
     }
 
     private func refresh() {
+        if DocsMode.isOn { return }
         micStatus = AVCaptureDevice.authorizationStatus(for: .audio)
         accessibilityOK = AXIsProcessTrusted()
     }

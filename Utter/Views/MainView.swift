@@ -17,7 +17,29 @@ struct MainView: View {
     }
 
     private var mainContent: some View {
-        NavigationSplitView {
+        Group {
+            if DocsMode.isOn {
+                // Screenshots only: same sidebar and pages without the glass split view, which can't be captured
+                HStack(spacing: 0) {
+                    sidebar.frame(width: 230).background(Color(nsColor: .windowBackgroundColor))
+                    Divider()
+                    detail.frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            } else {
+                NavigationSplitView {
+                    sidebar
+                } detail: {
+                    detail
+                }
+            }
+        }
+        .onAppear {
+            // Lets the Dock icon and menu bar reopen this window after it's closed
+            appDelegate.openMainWindow = { openWindow(id: "main") }
+        }
+    }
+
+    private var sidebar: some View {
             VStack(spacing: 0) {
                 brandHeader
                 List(selection: pageBinding) {
@@ -61,7 +83,10 @@ struct MainView: View {
                 sidebarStatus
             }
             .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 260)
-        } detail: {
+    }
+
+    @ViewBuilder
+    private var detail: some View {
             switch appState.selectedPage {
             case .history:
                 VStack(spacing: 0) {
@@ -80,11 +105,6 @@ struct MainView: View {
                 SettingsView()
                     .navigationTitle("Settings")
             }
-        }
-        .onAppear {
-            // Lets the Dock icon and menu bar reopen this window after it's closed
-            appDelegate.openMainWindow = { openWindow(id: "main") }
-        }
     }
 
     private var pageBinding: Binding<AppPage?> {

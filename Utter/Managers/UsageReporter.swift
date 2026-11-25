@@ -71,7 +71,7 @@ final class UsageReporter {
     /// Returns false when reporting is off or this build has no receiver (the event is not marked as sent)
     @discardableResult
     private func enqueue(_ event: Event) -> Bool {
-        guard isEnabled, endpoint != nil else { return false }
+        guard isEnabled, endpoint != nil, !DocsMode.isOn else { return false }
         var pending = defaults.array(forKey: Self.pendingKey) as? [[String: String]] ?? []
         pending.append([
             "event": event.rawValue,
@@ -86,7 +86,7 @@ final class UsageReporter {
 
     /// Sends queued events; anything that fails stays queued for the next launch or dictation
     private func flush() {
-        guard isEnabled, let endpoint, !flushing,
+        guard isEnabled, !DocsMode.isOn, let endpoint, !flushing,
               let pending = defaults.array(forKey: Self.pendingKey) as? [[String: String]], !pending.isEmpty else { return }
         flushing = true
         Task {

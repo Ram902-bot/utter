@@ -4,7 +4,7 @@
 
 set -e
 
-BUILD=$(ls -d "$HOME"/Library/Developer/Xcode/DerivedData/Utter-*/Build/Products/Debug/Utter.app 2>/dev/null | head -1)
+BUILD=$(ls -td "$HOME"/Library/Developer/Xcode/DerivedData/Utter-*/Build/Products/Debug/Utter.app 2>/dev/null | head -1)
 if [ -z "$BUILD" ]; then
     echo "Error: Build not found. Run 'xcodebuild -scheme Utter build' first."
     exit 1

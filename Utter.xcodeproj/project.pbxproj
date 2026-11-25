@@ -14,6 +14,7 @@
 		359BEC1A687F6F327102A39A /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3144A332F6F9807163FC920 /* OnboardingView.swift */; };
 		3E5C0EA4A8F47F5FBE21DF47 /* UtterApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26CB4DB7DCB99C62A114F6DA /* UtterApp.swift */; };
 		4531CEF9CABF88F0CFADD911 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB5B1A1D4814B4FA835E0964 /* MainView.swift */; };
+		5444CF654D91E47002A0A27F /* DocsRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46B150B49F2B3AEECE701FAA /* DocsRenderer.swift */; };
 		5D5BDFDDDB4CE8838688301D /* SpeechEngines.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB6ABDB065472E96C68924B5 /* SpeechEngines.swift */; };
 		5F5B28E373B4416A44A77F1F /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B8C9E5E7064AC42E17260F0 /* HistoryView.swift */; };
 		6F8901E8EF9082FF82387753 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70D00382CE2B0856DFA12E5B /* AppState.swift */; };
@@ -39,6 +40,7 @@
 		26CB4DB7DCB99C62A114F6DA /* UtterApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UtterApp.swift; sourceTree = "<group>"; };
 		321357494EA41F14F468A20C /* UsageReporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageReporter.swift; sourceTree = "<group>"; };
 		3DE5A4C462F07BFA5EEB4476 /* VocabularyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VocabularyStore.swift; sourceTree = "<group>"; };
+		46B150B49F2B3AEECE701FAA /* DocsRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocsRenderer.swift; sourceTree = "<group>"; };
 		58C770C0FF5DC85E1B0334B0 /* Utter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Utter.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		594B0A344E5AD7F684A264E6 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		5A9C262524FA233D91EB32A9 /* HistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryStore.swift; sourceTree = "<group>"; };
@@ -81,6 +83,7 @@
 			children = (
 				70D00382CE2B0856DFA12E5B /* AppState.swift */,
 				594B0A344E5AD7F684A264E6 /* Assets.xcassets */,
+				46B150B49F2B3AEECE701FAA /* DocsRenderer.swift */,
 				C490A8A1D728040CBC94EE97 /* Info.plist */,
 				DE8C89BEF844E4CE17667E55 /* Utter.entitlements */,
 				26CB4DB7DCB99C62A114F6DA /* UtterApp.swift */,
@@ -208,6 +211,7 @@
 				7830327490477CF044498773 /* AppPaths.swift in Sources */,
 				6F8901E8EF9082FF82387753 /* AppState.swift in Sources */,
 				8FFC4FA4D2E8266156BA297E /* AudioEngine.swift in Sources */,
+				5444CF654D91E47002A0A27F /* DocsRenderer.swift in Sources */,
 				A0DE5D40BB3187E2B6B18A5C /* FixWordSheet.swift in Sources */,
 				0BF942F5683E3649A3C83AC3 /* HistoryStore.swift in Sources */,
 				5F5B28E373B4416A44A77F1F /* HistoryView.swift in Sources */,

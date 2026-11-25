@@ -58,12 +58,12 @@ class AppState: ObservableObject {
     @Published var cloudError: String?
 
     // Permission status, refreshed every couple of seconds (for the sidebar Setup tick)
-    @Published private(set) var micGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
-    @Published private(set) var accessibilityGranted = AXIsProcessTrusted()
+    @Published private(set) var micGranted = DocsMode.isOn || AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
+    @Published private(set) var accessibilityGranted = DocsMode.isOn || AXIsProcessTrusted()
     private var permissionTimer: Timer?
 
     /// The old EverTalk app still running holds Cmd+Shift+Space, so Utter's shortcut can't work
-    @Published private(set) var legacyAppRunning = AppState.isLegacyAppRunning()
+    @Published private(set) var legacyAppRunning = !DocsMode.isOn && AppState.isLegacyAppRunning()
 
     var setupHealthy: Bool {
         micGranted && accessibilityGranted && transcriptionEngine.isModelReady && !legacyAppRunning
@@ -98,6 +98,7 @@ class AppState: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     init() {
+        if !DocsMode.isOn {
         permissionTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
@@ -108,6 +109,7 @@ class AppState: ObservableObject {
                 let legacy = AppState.isLegacyAppRunning()
                 if legacy != self.legacyAppRunning { self.legacyAppRunning = legacy }
             }
+        }
         }
 
         audioEngine.onLevel = { [weak self] level in
