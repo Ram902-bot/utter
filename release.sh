@@ -166,7 +166,9 @@ STYLE=$(brew style --cask Casks/utter.rb Casks/evertalk.rb 2>&1 | grep -E "^Cask
 [ -z "$STYLE" ] || { echo "$STYLE"; git checkout -q -- Casks; rm -f Casks/utter.rb; fail "brew style issues; tap NOT pushed"; }
 git add Casks/utter.rb Casks/evertalk.rb
 git commit -q -m "Utter $VERSION (evertalk cask now installs Utter)"
-git push -q origin main
+# Homebrew taps over HTTPS, which has no saved login; push over SSH like the main repo
+git remote set-url --push origin "git@github.com:$TAP_REPO.git"
+git push -q origin main || fail "tap commit made but NOT pushed. Fix access, then: cd \"$TAP_PATH\" && git push origin main"
 ok "tap updated"
 
 echo ""
