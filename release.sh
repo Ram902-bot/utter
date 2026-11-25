@@ -171,5 +171,5 @@ ok "tap updated"
 
 echo ""
 echo -e "${GREEN}Done. Utter $TAG released.${NC}"
-echo "  New installs:      brew install --cask ram902-bot/tap/utter"
+echo "  New installs:      brew trust --tap ram902-bot/tap && brew install --cask ram902-bot/tap/utter"
 echo "  Evertalk users:    Update to $VERSION in the menu bar, or brew upgrade --cask evertalk"

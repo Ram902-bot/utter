@@ -1,3 +1,5 @@
+**3.0.1**: fixes how future updates work for people who came from Evertalk, so an update can never leave you without the app. If you're on Evertalk, you go straight to 3.0.1.
+
 Evertalk is now **Utter**: a full Mac app instead of a menu bar app.
 
 ## New
@@ -18,4 +20,8 @@ Run Make Me Admin first on an Everstage laptop, then click **Update to 3.0.0** i
 - Launch at login works after the rename.
 - The shortcut recovers by itself when another app releases it.
 
-New installs: `brew install --cask ram902-bot/tap/utter`
+New installs:
+```
+brew trust --tap ram902-bot/tap
+brew install --cask ram902-bot/tap/utter
+```

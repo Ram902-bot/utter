@@ -11,8 +11,11 @@ Speech is turned into text on your Mac with OpenAI's Whisper model. No subscript
 ## Install
 
 ```bash
-brew install --cask Ram902-bot/tap/utter
+brew trust --tap ram902-bot/tap
+brew install --cask ram902-bot/tap/utter
 ```
+
+The first line tells Homebrew you trust this tap; newer Homebrew versions refuse to install from taps you haven't trusted. If Homebrew says `trust` is an unknown command, your version doesn't need it: just run the second line.
 
 Don't have Homebrew? Install it from [brew.sh](https://brew.sh) first.
 
@@ -106,7 +109,7 @@ Evertalk is now Utter. Updating keeps your speech model and settings, so there's
 | The app you have today | **Evertalk** (menu bar mic icon) |
 | The Homebrew package you update | **`evertalk`**, kept so your existing update button finds it |
 | The app after updating | **Utter**, in `/Applications/Utter.app`. Evertalk is removed |
-| New installs | `brew install --cask Ram902-bot/tap/utter` |
+| New installs | `brew trust --tap ram902-bot/tap` then `brew install --cask ram902-bot/tap/utter` |
 
 ### How to update
 
@@ -114,7 +117,7 @@ Nothing updates by itself. You click Update or run one command.
 
 1. **Everstage laptop?** Open **Everstage Self Service**, search **Make Me Admin** and run it. Without admin rights the update fails with "Update failed - retry".
 2. **Update**, depending on your version (Evertalk menu bar > Settings shows it):
-   - **Evertalk 2.2.2 or 2.2.3:** click the mic icon in the menu bar, then **Update to 3.0.0...**. This can take up to 6 hours to appear after release; reopening Evertalk checks again.
+   - **Evertalk 2.2.2 or 2.2.3:** click the mic icon in the menu bar, then **Update to 3.0.1...**. This can take up to 6 hours to appear after release; reopening Evertalk checks again.
    - **Evertalk 2.2.0 or 2.2.1:** there's no update button. Run this in Terminal:
 
      ```bash

@@ -23,6 +23,7 @@ class UpdateChecker: ObservableObject {
     ]
     private static let releasesURL = URL(string: "https://github.com/Ram902-bot/utter/releases/latest")!
     nonisolated private static let tapCask = "ram902-bot/tap/utter"
+    nonisolated private static let tapName = "ram902-bot/tap"
     private static let notifiedKey = "updateNotifiedVersion"
     private static let brewPaths = ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"]
     private static let checkInterval: TimeInterval = 6 * 60 * 60
@@ -103,10 +104,13 @@ class UpdateChecker: ObservableObject {
                 if installed.contains("utter") {
                     upgrade = Self.run(brew, ["upgrade", "--cask", "utter"])
                 } else if installed.contains("evertalk") {
-                    // Move from the old Evertalk cask to Utter (model and history are kept)
-                    let removed = Self.run(brew, ["uninstall", "--cask", "evertalk"])
-                    upgrade = removed.status == 0 ? Self.run(brew, ["install", "--cask", Self.tapCask]) : removed
+                    // Came from Evertalk: the evertalk cask installs Utter and is kept in sync on every
+                    // release, so upgrade it in place. Never uninstall first: if the install then failed
+                    // (e.g. the tap isn't trusted) the user would be left with no app.
+                    upgrade = Self.run(brew, ["upgrade", "--cask", "evertalk"])
                 } else {
+                    // Newer Homebrew refuses casks from taps that aren't trusted
+                    _ = Self.run(brew, ["trust", "--tap", Self.tapName])
                     upgrade = Self.run(brew, ["install", "--cask", Self.tapCask])
                 }
             }
