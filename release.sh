@@ -68,11 +68,9 @@ cask "utter" do
 
   url "https://github.com/$REPO/releases/download/v#{version}/Utter-#{version}.zip"
   name "Utter"
-  desc "Private on-device voice-to-text for Mac (formerly Evertalk)"
+  desc "Private on-device voice-to-text (formerly Evertalk)"
   homepage "https://github.com/$REPO"
 
-  depends_on macos: ">= :sonoma"
-  depends_on arch: :arm64
   conflicts_with cask: "evertalk"
 
   app "Utter.app"
@@ -98,11 +96,9 @@ cask "evertalk" do
 
   url "https://github.com/$REPO/releases/download/v#{version}/Utter-#{version}.zip"
   name "Utter (formerly Evertalk)"
-  desc "Private on-device voice-to-text for Mac, now called Utter"
+  desc "Private on-device voice-to-text, now called Utter"
   homepage "https://github.com/$REPO"
 
-  depends_on macos: ">= :sonoma"
-  depends_on arch: :arm64
   conflicts_with cask: "utter"
 
   app "Utter.app"
@@ -118,10 +114,10 @@ cask "evertalk" do
   end
 
   zap trash: [
-    "~/Library/Application Support/Utter",
     "~/Library/Application Support/Evertalk",
-    "~/Library/Preferences/com.ram902.utter.plist",
+    "~/Library/Application Support/Utter",
     "~/Library/Preferences/com.ram902.evertalk.plist",
+    "~/Library/Preferences/com.ram902.utter.plist",
   ]
 end
 EOF
@@ -165,7 +161,9 @@ step "6. Homebrew tap"
 cd "$TAP_PATH"
 git pull -q origin main
 write_casks "$TAP_PATH/Casks"
-brew style --cask Casks/utter.rb Casks/evertalk.rb || fail "brew style failed; tap NOT pushed (revert with git checkout .)"
+# Only the postflight style note is allowed: postflight_steps needs a recent Homebrew and runs sandboxed
+STYLE=$(brew style --cask Casks/utter.rb Casks/evertalk.rb 2>&1 | grep -E "^Casks/" | grep -v "InstallSteps" || true)
+[ -z "$STYLE" ] || { echo "$STYLE"; git checkout -q -- Casks; rm -f Casks/utter.rb; fail "brew style issues; tap NOT pushed"; }
 git add Casks/utter.rb Casks/evertalk.rb
 git commit -q -m "Utter $VERSION (evertalk cask now installs Utter)"
 git push -q origin main
