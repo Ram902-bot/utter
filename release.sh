@@ -1,103 +1,177 @@
 #!/bin/bash
-# Release Utter to GitHub and update Homebrew tap
-# Usage: ./release.sh 1.1.0
+# Build, package and (optionally) publish an Utter release.
+#
+#   ./release.sh 3.0.0            build + zip + checks only (nothing published)
+#   ./release.sh 3.0.0 --publish  also tag, create the GitHub release and update the Homebrew tap
+#
+# The tap gets two casks pointing at the same zip:
+#   utter     the real cask for new installs
+#   evertalk  bridge for people who installed Evertalk: their in-app updater reads this cask,
+#             so bumping it moves them to Utter. Kept in sync on every release.
 
 set -e
 
-# Config
 REPO="Ram902-bot/utter"
 TAP_REPO="Ram902-bot/homebrew-tap"
-APP_PATH="build/Release/Build/Products/Release/Utter.app"
+TAP_PATH="$(brew --repository 2>/dev/null)/Library/Taps/ram902-bot/homebrew-tap"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BUILD_DIR="$SCRIPT_DIR/build/release"
+APP="$BUILD_DIR/Build/Products/Release/Utter.app"
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-# Check version argument
-if [ -z "$1" ]; then
-    echo -e "${RED}Usage: ./release.sh <version>${NC}"
-    echo "Example: ./release.sh 1.1.0"
-    exit 1
-fi
+RED='\033[0;31m'; GREEN='\033[0;32m'; BLUE='\033[0;34m'; NC='\033[0m'
+step() { echo -e "${BLUE}$1${NC}"; }
+ok()   { echo -e "${GREEN}   $1${NC}"; }
+fail() { echo -e "${RED}Error: $1${NC}"; exit 1; }
 
 VERSION="$1"
+PUBLISH="$2"
+[ -z "$VERSION" ] && fail "usage: ./release.sh <version> [--publish]"
 TAG="v$VERSION"
-
-echo -e "${BLUE}Releasing Utter $TAG${NC}"
-echo ""
-
-# Check if app exists
-if [ ! -d "$SCRIPT_DIR/$APP_PATH" ]; then
-    echo -e "${RED}Error: App not found at $APP_PATH${NC}"
-    echo "Build the app in Xcode first (Product > Archive or Release build)"
-    exit 1
-fi
-
-# Check if tag already exists
-if git tag -l | grep -q "^$TAG$"; then
-    echo -e "${RED}Error: Tag $TAG already exists${NC}"
-    exit 1
-fi
-
-# Create zip
-echo -e "${BLUE}1. Creating zip...${NC}"
-ZIP_PATH="$SCRIPT_DIR/Utter-$VERSION.zip"
-cd "$SCRIPT_DIR/$(dirname "$APP_PATH")"
-zip -r "$ZIP_PATH" Utter.app
+ZIP="$SCRIPT_DIR/build/Utter-$VERSION.zip"
 cd "$SCRIPT_DIR"
-echo -e "${GREEN}   Created: Utter-$VERSION.zip${NC}"
 
-# Get SHA256
-SHA256=$(shasum -a 256 "$ZIP_PATH" | cut -d' ' -f1)
-echo -e "${GREEN}   SHA256: $SHA256${NC}"
+# --- Checks -------------------------------------------------------------
+step "1. Checks"
+PLIST_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Utter/Info.plist)
+[ "$PLIST_VERSION" = "$VERSION" ] || fail "Info.plist says $PLIST_VERSION, not $VERSION"
+[ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] || fail "release from main"
+git diff --quiet && git diff --cached --quiet || fail "uncommitted changes"
+if [ "$PUBLISH" = "--publish" ] && git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
+    fail "tag $TAG already exists on GitHub"
+fi
+ok "version $VERSION, clean main"
 
-# Create tag and push
-echo -e "${BLUE}2. Creating git tag...${NC}"
-git tag "$TAG"
-git push origin "$TAG"
-echo -e "${GREEN}   Pushed tag $TAG${NC}"
+# --- Build --------------------------------------------------------------
+step "2. Building Release"
+xcodebuild -project Utter.xcodeproj -scheme Utter -configuration Release \
+    -derivedDataPath "$BUILD_DIR" clean build >/dev/null 2>&1 || fail "build failed (run xcodebuild without >/dev/null to see why)"
+codesign --verify --deep --strict "$APP" || fail "signature check failed"
+codesign -d --entitlements - "$APP" 2>/dev/null | grep -q "audio-input" || fail "microphone entitlement missing"
+strings "$APP/Contents/MacOS/Utter" | grep -q "UTTER_DOCS_RENDER" && fail "debug render mode found in Release build"
+BUILT_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
+[ "$BUILT_VERSION" = "$VERSION" ] || fail "built app is $BUILT_VERSION"
+ok "built, signed, mic entitlement present, no debug code"
 
-# Create GitHub release
-echo -e "${BLUE}3. Creating GitHub release...${NC}"
-gh release create "$TAG" "$ZIP_PATH" \
-    --repo "$REPO" \
-    --title "Utter $TAG" \
-    --notes "Release $VERSION"
-echo -e "${GREEN}   Release created: https://github.com/$REPO/releases/tag/$TAG${NC}"
+# --- Package ------------------------------------------------------------
+step "3. Packaging"
+rm -f "$ZIP"
+ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
+SHA256=$(shasum -a 256 "$ZIP" | cut -d' ' -f1)
+ok "$(basename "$ZIP") ($(du -h "$ZIP" | cut -f1)), sha256 $SHA256"
 
-# Update Homebrew tap
-echo -e "${BLUE}4. Updating Homebrew tap...${NC}"
-TAP_PATH="/opt/homebrew/Library/Taps/ram902-bot/homebrew-tap"
+write_casks() {
+    local dir="$1"
+    cat > "$dir/utter.rb" <<EOF
+cask "utter" do
+  version "$VERSION"
+  sha256 "$SHA256"
 
-if [ ! -d "$TAP_PATH" ]; then
-    echo "   Tapping Ram902-bot/tap..."
-    brew tap Ram902-bot/tap
+  url "https://github.com/$REPO/releases/download/v#{version}/Utter-#{version}.zip"
+  name "Utter"
+  desc "Private on-device voice-to-text for Mac (formerly Evertalk)"
+  homepage "https://github.com/$REPO"
+
+  depends_on macos: ">= :sonoma"
+  depends_on arch: :arm64
+  conflicts_with cask: "evertalk"
+
+  app "Utter.app"
+
+  postflight do
+    system_command "/usr/bin/xattr",
+                   args: ["-cr", "#{appdir}/Utter.app"],
+                   sudo: false
+  end
+
+  zap trash: [
+    "~/Library/Application Support/Utter",
+    "~/Library/Preferences/com.ram902.utter.plist",
+  ]
+end
+EOF
+    cat > "$dir/evertalk.rb" <<EOF
+# Evertalk is now Utter. This cask stays so existing Evertalk installs see the update
+# in their menu bar and move to Utter. New installs: brew install --cask $(echo "$TAP_REPO" | tr '[:upper:]' '[:lower:]' | sed 's#/homebrew-#/#')/utter
+cask "evertalk" do
+  version "$VERSION"
+  sha256 "$SHA256"
+
+  url "https://github.com/$REPO/releases/download/v#{version}/Utter-#{version}.zip"
+  name "Utter (formerly Evertalk)"
+  desc "Private on-device voice-to-text for Mac, now called Utter"
+  homepage "https://github.com/$REPO"
+
+  depends_on macos: ">= :sonoma"
+  depends_on arch: :arm64
+  conflicts_with cask: "utter"
+
+  app "Utter.app"
+
+  postflight do
+    system_command "/usr/bin/xattr",
+                   args: ["-cr", "#{appdir}/Utter.app"],
+                   sudo: false
+    # Evertalk's updater tries to reopen Evertalk.app, which is gone, so open Utter instead
+    system_command "/usr/bin/open",
+                   args: ["-a", "#{appdir}/Utter.app"],
+                   sudo: false
+  end
+
+  zap trash: [
+    "~/Library/Application Support/Utter",
+    "~/Library/Application Support/Evertalk",
+    "~/Library/Preferences/com.ram902.utter.plist",
+    "~/Library/Preferences/com.ram902.evertalk.plist",
+  ]
+end
+EOF
+}
+
+STAGE="$SCRIPT_DIR/build/casks"
+mkdir -p "$STAGE"
+write_casks "$STAGE"
+ok "casks written to build/casks for review"
+
+if [ "$PUBLISH" != "--publish" ]; then
+    echo ""
+    echo "Dry run done. Nothing was published. Review build/casks/*.rb, then run:"
+    echo "  ./release.sh $VERSION --publish"
+    exit 0
 fi
 
+# --- Publish ------------------------------------------------------------
+step "4. Tagging $TAG"
+git tag "$TAG"
+git push -q origin "$TAG"
+ok "pushed tag"
+
+step "5. GitHub release"
+NOTES="$SCRIPT_DIR/build/release-notes.md"
+[ -f "$SCRIPT_DIR/RELEASE_NOTES.md" ] && cp "$SCRIPT_DIR/RELEASE_NOTES.md" "$NOTES" || echo "Utter $VERSION" > "$NOTES"
+gh release create "$TAG" "$ZIP" --repo "$REPO" --title "Utter $VERSION" --notes-file "$NOTES"
+ok "https://github.com/$REPO/releases/tag/$TAG"
+
+# Wait until the download URL serves the exact file Homebrew will check
+for i in $(seq 1 12); do
+    REMOTE_SHA=$(curl -sL "https://github.com/$REPO/releases/download/$TAG/Utter-$VERSION.zip" | shasum -a 256 | cut -d' ' -f1)
+    [ "$REMOTE_SHA" = "$SHA256" ] && break
+    sleep 5
+done
+[ "$REMOTE_SHA" = "$SHA256" ] || fail "download URL doesn't serve the uploaded zip yet; tap NOT updated"
+ok "download verified"
+
+step "6. Homebrew tap"
+[ -d "$TAP_PATH" ] || brew tap Ram902-bot/tap
 cd "$TAP_PATH"
-git pull origin main
-
-# Update cask file
-CASK_FILE="$TAP_PATH/Casks/utter.rb"
-sed -i '' "s/version \".*\"/version \"$VERSION\"/" "$CASK_FILE"
-sed -i '' "s/sha256 \".*\"/sha256 \"$SHA256\"/" "$CASK_FILE"
-
-git add Casks/utter.rb
-git commit -m "Update utter to $VERSION"
-git push origin main
-echo -e "${GREEN}   Homebrew tap updated${NC}"
-
-# Cleanup
-rm "$ZIP_PATH"
+git pull -q origin main
+write_casks "$TAP_PATH/Casks"
+brew style --cask Casks/utter.rb Casks/evertalk.rb || fail "brew style failed; tap NOT pushed (revert with git checkout .)"
+git add Casks/utter.rb Casks/evertalk.rb
+git commit -q -m "Utter $VERSION (evertalk cask now installs Utter)"
+git push -q origin main
+ok "tap updated"
 
 echo ""
-echo -e "${GREEN}Done! Utter $TAG released.${NC}"
-echo ""
-echo "Users can now run:"
-echo "  brew upgrade --cask utter"
-echo ""
-echo "Or new installs:"
-echo "  brew install --cask Ram902-bot/tap/utter"
+echo -e "${GREEN}Done. Utter $TAG released.${NC}"
+echo "  New installs:      brew install --cask ram902-bot/tap/utter"
+echo "  Evertalk users:    Update to $VERSION in the menu bar, or brew upgrade --cask evertalk"
